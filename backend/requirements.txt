@@ -1,0 +1,9 @@
+fastapi 
+google-auth 
+uvicorn 
+python-dotenv 
+google-generativeai==0.4.1 
+python-jose 
+sqlalchemy 
+psycopg2-binary
+requests
