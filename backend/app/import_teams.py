@@ -2,11 +2,15 @@
 
 import requests
 from sqlalchemy.orm import Session
-from .models import Team
-from .database import SessionLocal
+from app.models import Team
+from app.database import SessionLocal
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # .envを読み込む
 
 API_URL = "https://api.football-data.org/v4/competitions/PL/teams"
-API_TOKEN = "YOUR_API_KEY"  # ← 自分のAPIキーに差し替えて
+API_TOKEN = os.getenv("YOUR_API_KEY")  # ← 自分のAPIキーに差し替えて
 
 def fetch_teams_from_api():
     headers = {"X-Auth-Token": API_TOKEN}

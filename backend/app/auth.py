@@ -10,8 +10,19 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from . import models
-from .database import get_db
+from . import models #これいる？
+from app.database import get_db
+from app.models import Team
+from app.models import Player
+import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_TOKEN = os.getenv("YOUR_API_KEY")
+HEADERS = {"X-Auth-Token": API_TOKEN}
+
 
 
 SECRET_KEY = "your_secret_key"
@@ -82,13 +93,14 @@ async def login(login_request: LoginRequest):
         logging.error(f"Error in login: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-#delete
-@router.get("/protected")
-async def protected_route(current_user: TokenData = Depends(get_current_user)):
-    # ここでユーザー名とお気に入りチームのロゴをデータベースから取得する
-    username = "サンプルユーザー"  # データベースから取得
-    favorite_team_logo = "https://example.com/team_logo.png"  # データベースから取得
-    return {"message": f"ログイン成功!Google ID: {current_user.google_id}", "username": username, "favoriteTeamLogo": favorite_team_logo}
+
+class FavoriteUpdateRequest(BaseModel):
+    favorite_team: str
+    favorite_player: str
+    username: str  
+
+class UpdateUsernameRequest(BaseModel):
+    username: str
 
 
 
@@ -109,8 +121,7 @@ async def get_user_info(
     }
 
 
-class FavoriteUpdateRequest(BaseModel):
-    favorite_team: str
+
 
 user_data_store = {}
 @router.post("/api/user/favorite")
@@ -121,10 +132,60 @@ async def set_favorite_team(
 ):
     user = db.query(models.User).filter_by(google_id=current_user.google_id).first()
     if not user:
-        user = models.User(google_id=current_user.google_id, favorite_team=request.favorite_team)
+        user = models.User(google_id=current_user.google_id, 
+                           favorite_team=request.favorite_team, 
+                           favorite_player=request.favorite_player, 
+                           username=request.username
+                           )
         db.add(user)
     else:
         user.favorite_team = request.favorite_team
+        user.favorite_player = request.favorite_player
+        user.username=request.username  
     db.commit()
     return {"status": "ok"}
    
+@router.get("/api/teams")
+def get_teams(db: Session = Depends(get_db)):
+    teams = db.query(Team).all()
+    return [{"id": t.id, "name": t.name, "logo_url": t.logo_url} for t in teams]
+
+@router.get("/api/teams/{team_id}/players")
+def get_players_by_team(team_id: int, db: Session = Depends(get_db)):
+    players = db.query(Player).filter(Player.team_id == team_id).all()
+    return [{"id": p.id, "name": p.name, "position": p.position} for p in players]
+
+@router.post("/api/user/username")
+async def update_username(
+    request: UpdateUsernameRequest,
+    current_user: TokenData = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(models.User).filter_by(google_id=current_user.google_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="ユーザーが存在しません")
+    user.username = request.username
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.get("/api/team/{team_id}/latest-match")
+def get_latest_match(team_id: int):
+    url = f"https://api.football-data.org/v4/teams/{team_id}/matches?status=FINISHED&limit=1"
+    res = requests.get(url, headers=HEADERS)
+    res.raise_for_status()
+    match = res.json()["matches"][0]
+
+    return {
+        "utcDate": match["utcDate"],
+        "homeTeam": match["homeTeam"]["name"],
+        "awayTeam": match["awayTeam"]["name"],
+        "homeScore": match["score"]["fullTime"]["home"],
+        "awayScore": match["score"]["fullTime"]["away"],
+        "venue": match.get("venue", "情報なし") ,
+        "competition": match["competition"]["name"],
+        "matchday": match.get("matchday", ""),
+        "homeTeamId": match["homeTeam"]["id"],
+        "awayTeamId": match["awayTeam"]["id"],
+        "matchId": match["id"]
+    }

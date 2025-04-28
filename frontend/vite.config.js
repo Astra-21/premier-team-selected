@@ -5,7 +5,11 @@ import history from 'connect-history-api-fallback'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  
   server: {
+    watch: {
+      usePolling: true,
+    },
     proxy: {
       '/diagnose': 'http://localhost:8000'
     },

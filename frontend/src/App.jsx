@@ -37,6 +37,25 @@ function DiagnosisPage() {
     localStorage.setItem("recommendedTeam", data.team);  // ここで保存！
   };
   return (
+    // App.jsx もしくは DiagnosisPage のログインボタンの onClick に追加
+    <div classname="login">
+      <button
+        onClick={() => {
+          const token = localStorage.getItem("accessToken");
+          if (token) {
+            // トークンがある場合、ログイン済みとしてマイページへ
+            window.location.href = "/mypage";
+          } else {
+            // トークンがなければログインページへ
+            window.location.href = "/login";
+          }
+        }}
+        className="px-4 py-2 bg-blue-400 text-white rounded"
+      >
+        ログイン
+      </button>
+    
+
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-white p-6 flex items-center justify-center">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-2xl text-center">
         <h1 className="text-3xl font-bold mb-4">🏆 Premier League 診断</h1>
@@ -86,6 +105,7 @@ function DiagnosisPage() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
   

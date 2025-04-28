@@ -32,7 +32,9 @@ function LoginPage() {
             const team = localStorage.getItem("recommendedTeam");
             if (team) {
                 await axios.post("http://localhost:8000/api/user/favorite", {
-                    favorite_team: team
+                    favorite_team: team,
+                    favorite_player: "未選択",
+                    username: "未選択"   // ← 仮の値を入れる
                 }, {
                     headers: {
                     Authorization: `Bearer ${accessToken}`,

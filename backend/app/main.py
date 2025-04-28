@@ -7,20 +7,26 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 from app.recommend import router
-from app import auth      # 追加
+from app import auth      
 from app.recommend_logic import recommend_team
 from app import models
 from app.database import engine
+from app import auth, recommend, youtube  
+from app import instagram  # ← 追加
+
 
 load_dotenv()
 
 app = FastAPI()
 app.include_router(router)
 app.include_router(auth.router)
+app.include_router(youtube.router)  
+app.include_router(instagram.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],  # React側のURL
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
