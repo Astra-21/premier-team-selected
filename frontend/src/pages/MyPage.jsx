@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import api from '../features/api/apiClient';
 
 function MyPage() {
   const [username, setUsername] = useState("");
@@ -10,15 +11,11 @@ function MyPage() {
   const [activeTab, setActiveTab] = useState("info");
   const [matchData, setMatchData] = useState(null);
   const [youtubeUrl, setYoutubeUrl] = useState(null);
-  const [instagramUrl, setInstagramUrl] = useState(null);
-
-
-
   const navigate = useNavigate();
 
   const fetchTeamIdByName = async (teamName) => {
     try {
-      const res = await axios.get("http://localhost:8000/api/teams");
+      const res = await api.get("/api/teams");
       
       const normalize = str => str.toLowerCase().replace(" fc", "").trim();//より柔軟に
       const team = res.data.find(t => normalize(t.name) === normalize(teamName));
@@ -30,7 +27,6 @@ function MyPage() {
     }
   };
   
-
   useEffect(() => {
     const fetchUserInfo = async () => {
       const token = localStorage.getItem("accessToken");
@@ -41,17 +37,14 @@ function MyPage() {
       }
 
       try {
-        const response = await axios.get("http://localhost:8000/api/user/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await api.get("/api/user/me" );
         const data = response.data;
+
         setUsername(data.username);
         setFavoriteTeam(data.favorite_team);
         setFavoritePlayer(data.favorite_player);
         setLogoUrl(data.logo_url);
+        
       } catch (err) {
         console.error(err);
         navigate("/login");
@@ -73,15 +66,12 @@ function MyPage() {
       }
   
       try {
-        const res = await axios.get(`http://localhost:8000/api/team/${teamId}/latest-match`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get(`/api/team/${teamId}/latest-match`);
         setMatchData(res.data);
       } catch (err) {
         console.error("試合データ取得失敗", err);
       }
     };
-  
     if (activeTab === "matches") {
       fetchMatch();
     }
@@ -93,7 +83,7 @@ function MyPage() {
       if (!token || !favoriteTeam || activeTab !== "info") return;
   
       try {
-        const res = await axios.get(`http://localhost:8000/api/team/${favoriteTeam}/youtube`);
+        const res = await api.get(`/api/team/${favoriteTeam}/youtube`);
         setYoutubeUrl(res.data.video_url);
       } catch (err) {
         console.error("YouTube動画取得失敗", err);
@@ -103,24 +93,6 @@ function MyPage() {
     fetchYouTube();
   }, [activeTab, favoriteTeam]);
 
-  useEffect(() => {
-    const fetchInstagram = async () => {
-      if (!favoriteTeam || activeTab !== "info") return;
-  
-      try {
-        const res = await axios.get(`http://localhost:8000/api/team/${favoriteTeam}/instagram`);
-        setInstagramUrl(res.data);
-      } catch (err) {
-        console.error("Instagram取得失敗", err);
-      }
-    };
-  
-    fetchInstagram();
-  }, [activeTab, favoriteTeam]);
-  
-  
-
-  
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* ヘッダー */}
@@ -178,28 +150,6 @@ function MyPage() {
         </a>
       </div>
     )}
-
-{instagramUrl && (
-  <div className="mt-4 space-y-1">
-    <h4 className="text-md font-semibold">Instagram 最新画像</h4>
-    <img
-      src={instagramUrl}
-      alt="Instagram profile"
-      className="w-32 h-32 rounded-full mx-auto"
-    />
-    <a
-      href={`https://www.instagram.com/${TEAM_INSTAGRAM_HANDLES[favoriteTeam] || favoriteTeam.replace(" FC", "").replace(/\s+/g, "").toLowerCase()}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline block mt-2"
-    >
-      Instagram公式ページを見る
-    </a>
-  </div>
-)}
-
-
-
   </div>
 )}
 

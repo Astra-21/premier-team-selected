@@ -1,98 +1,40 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
-from fastapi import Body
+from datetime import timedelta
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from . import models #これいる？
-from app.database import get_db
-from app.models import Team
-from app.models import Player
 import requests
 import os
 from dotenv import load_dotenv
+from app.core.security import create_access_token
+from app.core.security import get_current_user
+from app.database import get_db
+from app.models import Team, Player, User
+from app import models
 
 load_dotenv()
 
 API_TOKEN = os.getenv("YOUR_API_KEY")
 HEADERS = {"X-Auth-Token": API_TOKEN}
-
-
-
-SECRET_KEY = "your_secret_key"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+client_id = "660638373406-9h904j2eq11m12edst37q185lm0j7it2.apps.googleusercontent.com"
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
-class TokenData(BaseModel):
-    google_id: Optional[str] = None
-
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        google_id: str = payload.get("sub")
-        if google_id is None:
-            raise credentials_exception
-        token_data = TokenData(google_id=google_id)
-    except JWTError:
-        raise credentials_exception
-    return token_data
-
-
-
 class LoginRequest(BaseModel):
     google_id: str
 
-@router.post("/login")
-async def login(login_request: LoginRequest):
-    id_token_str = login_request.google_id
-    logging.debug(f"Received login request with google_id: {id_token_str}")
-    try:
-        idinfo = id_token.verify_token(
-            id_token_str,
-            grequests.Request(),
-            "1080566879383-o9a4ft3uhqeuumpsl54ti7vt6r7c72t8.apps.googleusercontent.com"
-        )
-
-        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
-            raise HTTPException(status_code=400, detail="Invalid issuer.")
-
-        user_id = idinfo['sub']
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user_id}, expires_delta=access_token_expires
-        )
-        return {"access_token": access_token, "token_type": "bearer"}
-    except Exception as e:
-        logging.error(f"Error in login: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
+class TokenData(BaseModel):
+    google_id: Optional[str] = None
 
 class FavoriteUpdateRequest(BaseModel):
     favorite_team: str
@@ -102,14 +44,47 @@ class FavoriteUpdateRequest(BaseModel):
 class UpdateUsernameRequest(BaseModel):
     username: str
 
+user_data_store = {}
 
+@router.post("/login")
+async def login(login_request: LoginRequest):
 
+    id_token_str = login_request.google_id
+    logging.debug(f"Received login request with google_id: {id_token_str}")
+    
+    #client_idはセキュリティ的に「トークンの発行先を制限」
+    try:
+        idinfo = id_token.verify_token(
+            id_token_str,
+            grequests.Request(),
+            client_id
+        )
+        
+        #issはトークンの発行元。Google が発行したことを確認
+        if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise HTTPException(status_code=400, detail="Invalid issuer.")
+        
+        #セキュリティ管理と軽量化のため、最低限の商法のみ
+        user_id = idinfo['sub']
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user_id}, expires_delta=access_token_expires
+        
+        )
+
+        return {"access_token": access_token, "token_type": "bearer"}
+    
+    except Exception as e:
+
+        logging.error(f"Error in login: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @router.get("/api/user/me")
 async def get_user_info(
     current_user: TokenData = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    user = db.query(models.User).filter_by(google_id=current_user.google_id).first()
+    user = db.query(User).filter_by(google_id=current_user.google_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが存在しません")
 
@@ -120,10 +95,6 @@ async def get_user_info(
         "logo_url": user.logo_url
     }
 
-
-
-
-user_data_store = {}
 @router.post("/api/user/favorite")
 async def set_favorite_team(
     request: FavoriteUpdateRequest,
@@ -143,6 +114,7 @@ async def set_favorite_team(
         user.favorite_player = request.favorite_player
         user.username=request.username  
     db.commit()
+    #どこに出力されるん？
     return {"status": "ok"}
    
 @router.get("/api/teams")

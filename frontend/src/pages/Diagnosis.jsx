@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LoginPage from './loginPage';
-import MyPage from './MyPage';
-import SettingPage from './SettingPage';
+import api from '../features/api/apiClient';
 
 const categories = {
   "サッカースタイル": ["ポゼッション", "カウンター", "バランス", "未記入"],
@@ -19,6 +16,7 @@ function DiagnosisPage() {
     "昨季の順位": "未記入"
     
   });
+  const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [result, setResult] = useState(null);
 
@@ -27,15 +25,22 @@ function DiagnosisPage() {
   };
 
   const handleSubmit = async () => {
-    const res = await fetch(import.meta.env.VITE_API_ENDPOINT + '/recommend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preferences: Object.values(selected) }) 
-    });
-    const data = await res.json();
-    setResult(data);
-    localStorage.setItem("recommendedTeam", data.team);  // ここで保存！
+    try {
+
+      const res = await api.post("/recommend", {
+        preferences: Object.values(selected),
+      });
+      
+      //axios は常にレスポンスの JSON 部分だけを res.data として返す
+      setResult(res.data);
+      localStorage.setItem("recommendedTeam", res.data.team);
+
+    } catch (err) {
+      console.error("診断エラー:", err);
+      setError("診断に失敗しました。ネットワークをご確認ください。");
+    }
   };
+
   return (
     // App.jsx もしくは DiagnosisPage のログインボタンの onClick に追加
     <div classname="login">
@@ -99,7 +104,6 @@ function DiagnosisPage() {
             <img src={result.logo} alt={result.team} className="mx-auto my-4 w-24 h-24" />
             <p className="text-gray-700">{result.info}</p>
             <div className="mt-4 space-x-4">
-              <button onClick={() => window.location.href='/login'} className="px-4 py-2 bg-blue-400 text-white rounded">ログイン</button>
               <button onClick={() => window.location.href='/login'} className="px-4 py-2 bg-green-400 text-white rounded">新規登録</button>
             </div>
           </div>
@@ -110,16 +114,6 @@ function DiagnosisPage() {
   );
   
 }
+export default DiagnosisPage;
 
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<DiagnosisPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/mypage" element={<MyPage />} />
-        <Route path="/settings" element={<SettingPage />} />
-      </Routes>
-    </Router>
-  );
-}
+

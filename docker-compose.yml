@@ -8,10 +8,13 @@ services:
       - /app/node_modules
   backend:
     build: ./backend
+    env_file:
+    - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app 
+    
   db:
     image: postgres:14
     environment:
