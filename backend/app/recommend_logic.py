@@ -20,12 +20,14 @@ async def recommend_team(user_inputs: list[str], team_list: list[str]) -> str:
 
         ※ユーザーの希望は順位順に重要度が高くなっています。
 
+        ユーザーの希望条件：
+        {', '.join(user_inputs)}
+
         1位：{user_inputs[0]}
         2位：{user_inputs[1]}
         3位：{user_inputs[2]}
 
-        ユーザーの希望条件：
-        {', '.join(user_inputs)}
+        
 
         【出力ルール】
         - JSON形式で返してください（他の文章や解説は一切含めないでください）,コードブロック記法も禁止
@@ -49,7 +51,7 @@ async def recommend_team(user_inputs: list[str], team_list: list[str]) -> str:
 
     try:
         text = response.candidates[0].content.parts[0].text.strip()
-        # デバッグ出力
+        
         print("Gemini応答:", repr(text))  # reprで改行や空白も見えるようにする
 
         # 空チェック

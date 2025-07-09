@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import api from '../features/api/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
+
 
 const clientId = "660638373406-9h904j2eq11m12edst37q185lm0j7it2.apps.googleusercontent.com"; 
 
@@ -10,8 +10,7 @@ function LoginPage() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    //asyncでawaitが使えるように
-
+    //asyncでawaitが使えるように,credentialResponseを引数で受け取る。
     const onSuccess = async (credentialResponse) => {
 
         console.log("Redirect URI:", "http://localhost:5173/mypage");
@@ -45,7 +44,7 @@ function LoginPage() {
                     username: "未選択"   
                 });
 
-                localStorage.removeItem("recommendedTeam"); 
+                localStorage.removeItem("recommendedTeam");
             }
             
             navigate("/mypage");
@@ -87,7 +86,6 @@ function LoginPage() {
             <GoogleLogin
                 onSuccess={onSuccess}
                 onError={onFailure}
-                //useOneTap
                 ux_mode="popup"
                 redirectUri="http://localhost:5173/login"
                 text="Googleでログイン"

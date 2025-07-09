@@ -11,8 +11,6 @@ class User(Base):
     favorite_player = Column(String, default="未設定 右上の設定ボタンから変更できます")
     logo_url = Column(String, default="")
 
-
-
 class Team(Base):
     __tablename__ = "teams"
 
@@ -20,11 +18,10 @@ class Team(Base):
     name = Column(String, nullable=False)
     logo_url = Column(String, nullable=False)
     
-
 class Player(Base):
     __tablename__ = "players"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     position = Column(String)
-    team_id = Column(Integer)  # 外部キーは今回は省略でもOK
+    team_id = Column(Integer)  

@@ -1,19 +1,14 @@
-import logging
+import logging, requests, os
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from pydantic import BaseModel
 from typing import Optional
 from datetime import timedelta
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
-import requests
-import os
 from dotenv import load_dotenv
-from app.core.security import create_access_token
-from app.core.security import get_current_user
+from app.core.security import create_access_token, get_current_user
 from app.database import get_db
 from app.models import Team, Player, User
 from app import models
@@ -24,7 +19,7 @@ API_TOKEN = os.getenv("YOUR_API_KEY")
 HEADERS = {"X-Auth-Token": API_TOKEN}
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
 client_id = "660638373406-9h904j2eq11m12edst37q185lm0j7it2.apps.googleusercontent.com"
 
 router = APIRouter()
@@ -64,12 +59,11 @@ async def login(login_request: LoginRequest):
         if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
             raise HTTPException(status_code=400, detail="Invalid issuer.")
         
-        #セキュリティ管理と軽量化のため、最低限の商法のみ
+    
         user_id = idinfo['sub']
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user_id}, expires_delta=access_token_expires
-        
         )
 
         return {"access_token": access_token, "token_type": "bearer"}
@@ -114,7 +108,7 @@ async def set_favorite_team(
         user.favorite_player = request.favorite_player
         user.username=request.username  
     db.commit()
-    #どこに出力されるん？
+    
     return {"status": "ok"}
    
 @router.get("/api/teams")
@@ -139,7 +133,6 @@ async def update_username(
     user.username = request.username
     db.commit()
     return {"status": "ok"}
-
 
 @router.get("/api/team/{team_id}/latest-match")
 def get_latest_match(team_id: int):
