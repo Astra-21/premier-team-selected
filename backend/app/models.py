@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, ForeignKey
 from .database import Base
 
 class User(Base):
@@ -24,4 +24,4 @@ class Player(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     position = Column(String)
-    team_id = Column(Integer)  
+    team_id = Column(Integer, ForeignKey("teams.id", ondelete="RESTRICT"), nullable=False, index=True)  
