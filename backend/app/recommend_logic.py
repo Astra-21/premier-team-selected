@@ -43,12 +43,12 @@ async def recommend_team(user_inputs: list[str], team_list: list[str]) -> str:
 
 
     
-    model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('models/gemini-flash-latest')
 
 
     response = await model.generate_content_async(
         contents=[{"role": "user", "parts": [{"text": prompt}]}],
-        generation_config={"temperature": 0.5, "max_output_tokens": 50}
+        generation_config={"temperature": 0}
     )
 
     try:

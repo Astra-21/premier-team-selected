@@ -1,6 +1,6 @@
 import logging, requests, os
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException, Response
+#from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import Optional
 from datetime import timedelta
@@ -23,7 +23,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 15
 client_id = "660638373406-9h904j2eq11m12edst37q185lm0j7it2.apps.googleusercontent.com"
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+#oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 class LoginRequest(BaseModel):
     google_id: str
@@ -42,7 +42,7 @@ class UpdateUsernameRequest(BaseModel):
 user_data_store = {}
 
 @router.post("/login")
-async def login(login_request: LoginRequest):
+async def login(login_request: LoginRequest , response: Response):
 
     id_token_str = login_request.google_id
     logging.debug(f"Received login request with google_id: {id_token_str}")
@@ -66,7 +66,17 @@ async def login(login_request: LoginRequest):
             data={"sub": user_id}, expires_delta=access_token_expires
         )
 
-        return {"access_token": access_token, "token_type": "bearer"}
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,      #JavaScriptからアクセス不可にする
+            samesite="lax",     #CSRF対策 (LaxまたはStrict)
+            secure=False,       #本番環境(HTTPS)では True にする
+            path="/",
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60 #トークンの有効期限と合わせる
+        )
+
+        return {"status":"ok"}
     
     except Exception as e:
 

@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 import logging
 from typing import Optional
 from jose import JWTError, jwt 
-from fastapi import Depends, status, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, status, HTTPException, Cookie
+#from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -13,7 +13,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 
-oauth2_schema = OAuth2PasswordBearer(tokenUrl="token")
+#oauth2_schema = OAuth2PasswordBearer(tokenUrl="token")
 
 class TokenData(BaseModel):
     google_id: Optional[str] = None
@@ -39,19 +39,22 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 #クライアントからのデータより誰がログインしているか確認
-def get_current_user(token: str = Depends(oauth2_schema)):
+def get_current_user(access_token: Optional[str] = Cookie(None)):
 
     #print(type(HTTPException))
-
     credentials_exception = HTTPException(
         status_code = status.HTTP_401_UNAUTHORIZED,
         detail = "Could not validate credantials",
-        headers = {"WWW-Authenticate" : "Bearer"},
+        # Cookieベースの場合、このヘッダーは厳密には不要かもしれませんが、残しておいても害はありません
     )
+
+    #クッキーがセットされていない場合
+    if access_token is None:
+        raise credentials_exception
 
     try:
 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         google_id: str = payload.get("sub")
 
         if google_id is None:

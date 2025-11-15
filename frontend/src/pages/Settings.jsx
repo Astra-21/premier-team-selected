@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../features/api/apiClient';
 
 function SettingPage() {
   const [teams, setTeams] = useState([]);
@@ -13,11 +13,9 @@ function SettingPage() {
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const token = localStorage.getItem("accessToken");
+      // const token = localStorage.getItem("accessToken");
       try {
-        const res = await axios.get("http://localhost:8000/api/user/me", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get("/api/user/me");
         const data = res.data;
         setUsername(data.username);  // ← ここでDBから取得して初期化
       } catch (err) {
@@ -32,7 +30,7 @@ function SettingPage() {
   useEffect(() => {
     const fetchTeams = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/teams");
+        const response = await api.get("/api/teams");
         setTeams(response.data);
       } catch (error) {
         console.error("チーム取得エラー:", error);
@@ -46,7 +44,7 @@ function SettingPage() {
     const fetchPlayers = async () => {
       if (!selectedTeam) return;
       try {
-        const res = await axios.get(`http://localhost:8000/api/teams/${selectedTeam.id}/players`);
+        const res = await api.get(`/api/teams/${selectedTeam.id}/players`);
         setPlayers(res.data);
       } catch (err) {
         console.error("選手取得エラー:", err);
@@ -57,14 +55,12 @@ function SettingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("accessToken");
+    // const token = localStorage.getItem("accessToken");
     try {
-      await axios.post("http://localhost:8000/api/user/favorite", {
+      await api.post("/api/user/favorite", {
         favorite_team: selectedTeam.name,
         favorite_player: selectedPlayer.name,
         username: username
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       navigate("/mypage");
     } catch (err) {
@@ -76,10 +72,8 @@ function SettingPage() {
     e.preventDefault();
     const token = localStorage.getItem("accessToken");
     try {
-      await axios.post("http://localhost:8000/api/user/username", {
+      await api.post("/api/user/username", {
         username: username
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       alert("ユーザー名を更新しました");
       navigate("/mypage"); 
