@@ -27,12 +27,12 @@ function LoginPage() {
             //Googleから取得したID Tokenをサーバーに渡して、JWTを受け取る非同期通信を可能に
             //サーバーからのレスポンスを待ち、その中身を使って localStorage に保存するのが「順番どおりに」できてる
 
-            const response = await api.post("/login", {
+            await api.post("/login", {
               google_id: id_token,
             });
 
-            const accessToken = response.data.access_token;
-            localStorage.setItem("accessToken", accessToken);
+            // const accessToken = response.data.access_token;
+            // localStorage.setItem("accessToken", accessToken);
 
             // 推薦されたチームがあれば保存
             const team = localStorage.getItem("recommendedTeam");

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import api from '../features/api/apiClient';
 
@@ -29,12 +28,12 @@ function MyPage() {
   
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const token = localStorage.getItem("accessToken");
+      // const token = localStorage.getItem("accessToken");
 
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+      // if (!token) {
+      //   navigate("/login");
+      //   return;
+      // }
 
       try {
         const response = await api.get("/api/user/me" );
@@ -47,7 +46,7 @@ function MyPage() {
         
       } catch (err) {
         console.error(err);
-        navigate("/login");
+        //navigate("/login");
       }
     };
 
@@ -56,10 +55,12 @@ function MyPage() {
 
   useEffect(() => {
     const fetchMatch = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (!token || !favoriteTeam) return;
-  
+      // const token = localStorage.getItem("accessToken");
+      // if (!token || !favoriteTeam) return;
+      
+      if (!favoriteTeam) return;
       const teamId = await fetchTeamIdByName(favoriteTeam);
+
       if (!teamId) {
         console.warn("チームIDが見つかりませんでした");
         return;
@@ -79,9 +80,10 @@ function MyPage() {
 
   useEffect(() => {
     const fetchYouTube = async () => { //activeTab === "info" のとき
-      const token = localStorage.getItem("accessToken");
-      if (!token || !favoriteTeam || activeTab !== "info") return;
+      // const token = localStorage.getItem("accessToken");
+      // if (!token || !favoriteTeam || activeTab !== "info") return;
   
+      if (!favoriteTeam || activeTab !== "info") return;
       try {
         const res = await api.get(`/api/team/${favoriteTeam}/youtube`);
         setYoutubeUrl(res.data.video_url);
